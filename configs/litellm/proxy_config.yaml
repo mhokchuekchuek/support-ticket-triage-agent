@@ -1,0 +1,43 @@
+# LiteLLM Proxy Configuration
+# This file configures the LiteLLM proxy server for centralized LLM management
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+
+# ==============================================================================
+# Environment Variables - Centralized API key configuration
+# ==============================================================================
+environment_variables:
+  OPENAI_API_KEY: os.environ/OPENAI_API_KEY
+
+# ==============================================================================
+# LiteLLM Settings - Caching, callbacks, retries
+# ==============================================================================
+litellm_settings:
+  # Enable Redis caching
+  cache: false
+
+  # Retry configuration
+  num_retries: 3
+  request_timeout: 600
+
+  # Drop unsupported params instead of erroring
+  drop_params: true
+
+# ==============================================================================
+# General Settings - Server configuration
+# ==============================================================================
+general_settings:
+  # Master key for API authentication
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+  # Database for storing model configs and API keys
+  database_url: os.environ/DATABASE_URL
+
+  # Health check settings
+  health_check: true
+  health_check_interval: 300
+
+# ==============================================================================
+# Router Settings - For load balancing
+# ==============================================================================
+router_settings:
+  routing_strategy: simple-shuffle

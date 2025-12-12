@@ -1,0 +1,11 @@
+# Triage Agent Configuration
+# Override via environment variables using TRIAGE__ prefix
+triage:
+  llm:
+    provider: "litellm"
+    model: "gpt-4o-mini"
+    temperature: 0.7
+    max_tokens: 2000
+
+  vectordb:
+    collection_name: "knowledge_base"

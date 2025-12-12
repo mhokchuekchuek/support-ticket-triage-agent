@@ -1,0 +1,6 @@
+# Vector Database Configuration
+# Override via environment variables using VECTORDB__ prefix
+vectordb:
+  provider: "qdrant"
+  host: "localhost"
+  port: 6333
