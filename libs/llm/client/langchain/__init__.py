@@ -1,0 +1,1 @@
+"""LangChain ChatOpenAI client wrapper."""
