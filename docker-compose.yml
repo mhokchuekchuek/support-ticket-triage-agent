@@ -1,0 +1,64 @@
+services:
+  # Redis - Caching and session memory
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: support-triage-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - support-triage-network
+
+  # PostgreSQL - Database for LiteLLM proxy
+  postgres:
+    image: postgres:15-alpine
+    container_name: support-triage-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=litellm
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - support-triage-network
+
+  # Qdrant - Vector database for semantic search
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: support-triage-qdrant
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - support-triage-network
+
+  # LiteLLM Proxy - Centralized LLM gateway
+  litellm-proxy:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: support-triage-litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./configs/litellm/proxy_config.yaml:/app/config.yaml:ro
+    env_file:
+      - .env
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - support-triage-network
+
+networks:
+  support-triage-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:
+  qdrant_storage:
