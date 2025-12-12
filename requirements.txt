@@ -1,0 +1,34 @@
+# Core Framework
+fastapi==0.115.14
+uvicorn[standard]==0.29.0
+pydantic==2.12.3
+dynaconf==3.2.12
+
+# LangChain
+langchain==1.0.2
+langchain-anthropic==1.0.0
+langchain-openai==1.0.1
+langchain-text-splitters==1.0.0
+langgraph==1.0.1
+langgraph-checkpoint-redis==0.1.2
+
+# LLM Providers
+litellm==1.78.7
+
+# Observability & Prompt Management
+langfuse==3.8.1
+
+# Vector Store
+qdrant-client==1.15.1
+fastembed==0.6.1
+
+# Utilities
+python-dotenv==1.1.1
+redis==6.4.0
+
+# Development
+pytest==8.4.2
+pytest-asyncio==1.2.0
+black==25.9.0
+flake8==7.3.0
+mypy==1.18.2
