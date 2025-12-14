@@ -1,5 +1,7 @@
 services:
-  # Redis - Caching and session memory
+  # ==============================================================================
+  # Redis - Caching for LiteLLM proxy and session memory
+  # ==============================================================================
   redis:
     image: redis/redis-stack-server:latest
     container_name: support-triage-redis
@@ -10,7 +12,9 @@ services:
     networks:
       - support-triage-network
 
+  # ==============================================================================
   # PostgreSQL - Database for LiteLLM proxy
+  # ==============================================================================
   postgres:
     image: postgres:15-alpine
     container_name: support-triage-postgres
@@ -25,19 +29,25 @@ services:
     networks:
       - support-triage-network
 
+  # ==============================================================================
   # Qdrant - Vector database for semantic search
+  # ==============================================================================
   qdrant:
     image: qdrant/qdrant:latest
     container_name: support-triage-qdrant
     ports:
-      - "6333:6333"  # REST API
-      - "6334:6334"  # gRPC
+      - "6333:6333" # REST API
+      - "6334:6334" # gRPC
     volumes:
       - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
     networks:
       - support-triage-network
 
-  # LiteLLM Proxy - Centralized LLM gateway
+  # ==============================================================================
+  # LiteLLM Proxy - Centralized LLM gateway with caching
+  # ==============================================================================
   litellm-proxy:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: support-triage-litellm
@@ -45,20 +55,62 @@ services:
       - "4000:4000"
     volumes:
       - ./configs/litellm/proxy_config.yaml:/app/config.yaml:ro
+      - ./prompts:/app/prompts:ro
     env_file:
       - .env
-    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--detailed_debug"]
     depends_on:
       - redis
       - postgres
     networks:
       - support-triage-network
+    restart: unless-stopped
 
+  # ==============================================================================
+  # API - FastAPI application with triage agent
+  # ==============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: support-triage-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+      - ./src:/app/src
+      - ./libs:/app/libs
+      - ./configs:/app/configs:ro
+    env_file:
+      - .env
+    environment:
+      - LITELLM_PROXY_URL=http://litellm-proxy:4000
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - litellm-proxy
+      - qdrant
+      - redis
+    networks:
+      - support-triage-network
+    restart: unless-stopped
+
+# ==============================================================================
+# Networks
+# ==============================================================================
 networks:
   support-triage-network:
     driver: bridge
 
+# ==============================================================================
+# Volumes - For data persistence
+# ==============================================================================
 volumes:
   redis_data:
+    driver: local
   postgres_data:
+    driver: local
   qdrant_storage:
+    driver: local
