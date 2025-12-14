@@ -1,20 +1,19 @@
-"""Application entry point - injects configuration.
+"""Application entry point - initializes config and injects to app.
 
 Run with: uvicorn main:app --reload
 """
 from dotenv import load_dotenv
 
-from libs.logger.logger import setup_logging, get_logger
-from src.configs.settings import Settings
 from src.usecases.api.app import create_app
+from libs.configs.selector import ConfigSelector
+from libs.logger.logger import setup_logging, get_logger
 
-# Load configuration at module level
 load_dotenv()
-settings = Settings()
+
+settings = ConfigSelector.create(provider="dynaconf")
 setup_logging(level=settings.get("LOG_LEVEL", "INFO"))
 
 logger = get_logger(__name__)
 logger.info("Initializing application...")
 
-# Create app instance for uvicorn
-app = create_app(config=settings.as_dict())
+app = create_app(settings=settings)
