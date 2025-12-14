@@ -1,0 +1,23 @@
+# Ingestor Configuration
+# Override via environment variables using INGESTOR__ prefix
+ingestor:
+  # Path to knowledge base directory (markdown files)
+  kb_path: "data/knowledge_base"
+
+  # Vector database settings
+  vectordb:
+    provider: qdrant
+    host: localhost
+    port: 6333
+    collection_name: knowledge_base
+
+  # Embedding model settings (OpenAI)
+  embedding:
+    model: "text-embedding-3-large"
+    vector_size: 3072
+
+  # Text chunking settings (RecursiveCharacterTextSplitter)
+  # text-embedding-3-large: 8191 token limit (~4 chars/token ≈ 32000 chars)
+  chunking:
+    chunk_size: 32000
+    chunk_overlap: 200

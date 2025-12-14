@@ -1,11 +1,44 @@
 # Triage Agent Configuration
 # Override via environment variables using TRIAGE__ prefix
 triage:
+  # LLM Configuration (shared across all agents)
   llm:
     provider: "litellm"
     model: "gpt-4o-mini"
+    embedding_model: "text-embedding-3-large"
     temperature: 0.7
     max_tokens: 2000
 
+  # Vector DB Configuration
   vectordb:
     collection_name: "knowledge_base"
+
+  # Agent Configurations
+  agents:
+    translator:
+      prompt:
+        id: triage_translator
+        environment: production
+
+    supervisor:
+      prompt:
+        id: triage_supervisor
+        environment: production
+
+    billing:
+      prompt:
+        id: triage_billing
+        environment: production
+      category_filter: billing
+
+    technical:
+      prompt:
+        id: triage_technical
+        environment: production
+      category_filter: technical
+
+    general:
+      prompt:
+        id: triage_general
+        environment: production
+      category_filter: general

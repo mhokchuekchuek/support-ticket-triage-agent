@@ -1,0 +1,17 @@
+# Prompts Configuration (for uploader)
+# Override via environment variables
+
+# Prompt Manager - Langfuse
+prompt_manager:
+  langfuse:
+    enabled: true
+    provider: langfuse
+    host: "@jinja {{ env.get('LANGFUSE_HOST', 'https://cloud.langfuse.com') }}"
+    public_key: "@format {env[LANGFUSE_PUBLIC_KEY]}"
+    secret_key: "@format {env[LANGFUSE_SECRET_KEY]}"
+
+# Prompts settings
+prompts:
+  directory: prompts
+  version: v1
+  label: production

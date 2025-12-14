@@ -1,0 +1,41 @@
+# ==============================================================================
+# Shared Agent Configuration
+# Secrets are loaded from environment variables (.env file)
+# Override via environment variables using AGENT_SHARED__ prefix
+# ==============================================================================
+agent_shared:
+  # ============================================================================
+  # LLM Proxy - LiteLLM
+  # ============================================================================
+  llm:
+    proxy_url: "@jinja {{ env.get('LITELLM_PROXY_URL', 'http://litellm-proxy:4000') }}"
+    api_key: "@jinja {{ env.get('LITELLM_API_KEY', 'sk-1234') }}"
+
+  # ============================================================================
+  # Vector Database - Qdrant
+  # ============================================================================
+  vectordb:
+    provider: qdrant
+    host: "@format {env[QDRANT_HOST]}"
+    port: "@format {env[QDRANT_PORT]}"
+
+  # ============================================================================
+  # Observability - Langfuse Tracing
+  # ============================================================================
+  observability:
+    langfuse:
+      enabled: true
+      provider: langfuse
+      host: "@jinja {{ env.get('LANGFUSE_HOST', 'https://cloud.langfuse.com') }}"
+      public_key: "@format {env[LANGFUSE_PUBLIC_KEY]}"
+      secret_key: "@format {env[LANGFUSE_SECRET_KEY]}"
+
+  # ============================================================================
+  # Prompt Manager - Langfuse Prompts
+  # ============================================================================
+  prompt_manager:
+    langfuse:
+      enabled: true
+      provider: langfuse
+    version: latest
+    label: production
