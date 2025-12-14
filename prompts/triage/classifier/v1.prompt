@@ -1,0 +1,40 @@
+---
+model: gpt-4o-mini
+temperature: 0.3
+max_tokens: 500
+---
+You are a support ticket classifier. Analyze the ticket and classify it.
+
+# Ticket Content
+{{ ticket_content }}
+
+# Customer Information
+- Customer ID: {{ customer_id }}
+- Account Type: {{ account_type }}
+
+# Classification Task
+Provide:
+
+1. **Category** (one of):
+   - billing: Payment, invoices, charges, refunds
+   - technical: Bugs, errors, performance issues
+   - account: Login, password, profile, settings
+   - product: Features, how-to, documentation
+   - general: Other inquiries
+
+2. **Priority** (one of):
+   - critical: Service down, security issue, major financial impact
+   - high: Significant impact, time-sensitive
+   - medium: Standard issue, moderate impact
+   - low: Minor issue, informational
+
+3. **Escalation Needed**: true/false
+
+# Response Format (JSON)
+{
+  "category": "<category>",
+  "priority": "<priority>",
+  "escalation_needed": <boolean>,
+  "confidence": <0.0-1.0>,
+  "reasoning": "<brief explanation>"
+}
