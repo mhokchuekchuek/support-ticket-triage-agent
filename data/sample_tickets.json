@@ -1,0 +1,87 @@
+{
+  "tickets": [
+    {
+      "ticket_id": "ticket_001",
+      "customer_id": "customer_001",
+      "customer_info": {
+        "plan": "free",
+        "tenure_months": 3,
+        "region": "US",
+        "seats": null,
+        "previous_tickets": 1
+      },
+      "messages": [
+        {
+          "role": "customer",
+          "content": "I was charged twice for my subscription last month. I need a refund immediately. This is unacceptable!",
+          "timestamp": "2024-11-15T10:30:00Z"
+        }
+      ],
+      "metadata": {
+        "channel": "email",
+        "subject": "Billing Error - Double Charge"
+      }
+    },
+    {
+      "ticket_id": "ticket_002",
+      "customer_id": "customer_002",
+      "customer_info": {
+        "plan": "enterprise",
+        "tenure_months": 24,
+        "region": "APAC",
+        "seats": 45,
+        "previous_tickets": 5
+      },
+      "messages": [
+        {
+          "role": "customer",
+          "content": "ระบบล่มมาสองชั่วโมงแล้ว ทีมงาน 45 คนทำงานไม่ได้เลย ต้องการความช่วยเหลือด่วน!",
+          "timestamp": "2024-11-15T14:00:00Z"
+        }
+      ],
+      "metadata": {
+        "channel": "chat",
+        "subject": "System Outage - Urgent"
+      }
+    },
+    {
+      "ticket_id": "ticket_003",
+      "customer_id": "customer_003",
+      "customer_info": {
+        "plan": "pro",
+        "tenure_months": 8,
+        "region": "US",
+        "seats": null,
+        "previous_tickets": 0
+      },
+      "messages": [
+        {
+          "role": "customer",
+          "content": "Hey! Quick question - do you guys have dark mode? My eyes are killing me working late nights. Would be awesome to have it!",
+          "timestamp": "2024-11-15T22:15:00Z"
+        }
+      ],
+      "metadata": {
+        "channel": "in-app",
+        "subject": "Feature Question"
+      }
+    }
+  ],
+  "expected_outcomes": {
+    "ticket_001": {
+      "urgency": "high",
+      "action": "escalate_human",
+      "reasoning": "Billing error, frustrated customer, requires refund processing"
+    },
+    "ticket_002": {
+      "urgency": "critical",
+      "action": "escalate_human",
+      "reasoning": "Enterprise outage, 45 users affected, Thai language indicates regional support need"
+    },
+    "ticket_003": {
+      "urgency": "low",
+      "action": "auto_respond",
+      "reasoning": "Feature question, positive sentiment, can direct to KB article"
+    }
+  }
+}

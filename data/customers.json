@@ -1,0 +1,69 @@
+{
+  "customers": [
+    {
+      "id": "customer_001",
+      "name": "John Smith",
+      "email": "john.smith@example.com",
+      "plan": "free",
+      "tenure_months": 3,
+      "region": "US",
+      "seats": 1,
+      "previous_tickets": [
+        {
+          "id": "prev_001",
+          "subject": "Login issue",
+          "resolved": true
+        }
+      ],
+      "notes": "Upgraded from trial last quarter"
+    },
+    {
+      "id": "customer_002",
+      "name": "Somporn Thongchai",
+      "email": "somporn@enterprise-th.com",
+      "plan": "enterprise",
+      "tenure_months": 24,
+      "region": "APAC",
+      "seats": 45,
+      "previous_tickets": [
+        {
+          "id": "prev_002",
+          "subject": "SSO integration",
+          "resolved": true
+        },
+        {
+          "id": "prev_003",
+          "subject": "Bulk user import",
+          "resolved": true
+        },
+        {
+          "id": "prev_004",
+          "subject": "API rate limits",
+          "resolved": true
+        },
+        {
+          "id": "prev_005",
+          "subject": "Custom reporting",
+          "resolved": true
+        },
+        {
+          "id": "prev_006",
+          "subject": "Scheduled maintenance",
+          "resolved": true
+        }
+      ],
+      "notes": "Strategic account, Thai-speaking support preferred, 24/7 SLA"
+    },
+    {
+      "id": "customer_003",
+      "name": "Sarah Johnson",
+      "email": "sarah.j@startup.io",
+      "plan": "pro",
+      "tenure_months": 8,
+      "region": "US",
+      "seats": 1,
+      "previous_tickets": [],
+      "notes": "First-time ticket submitter, active user"
+    }
+  ]
+}
