@@ -7,38 +7,37 @@ Dynaconf-based configuration management with YAML config files.
 ```
 configs/
 ├── agents/
+│   ├── shared.yaml         # Shared agent config (vectordb, observability, prompt_manager)
 │   └── triage.yaml         # Triage agent settings
 ├── litellm/
 │   └── proxy_config.yaml   # LiteLLM proxy server config
-└── vectordb.yaml           # Shared vector database settings
+├── ingestor.yaml           # KB ingestor settings (includes vectordb)
+└── prompts.yaml            # Prompts uploader settings
 ```
 
 ## Modules
 
 | Module | Description |
 |--------|-------------|
-| [Settings](settings.md) | Settings class with Dynaconf integration |
 | [Agents](agents/README.md) | Agent-specific configurations |
-| [VectorDB](vectordb.md) | Shared vector database settings |
+| [Ingestor](ingestor.md) | KB ingestor settings |
+| [Prompts](prompts.md) | Prompts uploader settings |
 | [LiteLLM](litellm.md) | LiteLLM proxy server configuration |
+
+## Settings Manager
+
+See [libs/configs/dynaconf](../libs/configs/dynaconf.md) for configuration manager documentation.
 
 ## Quick Start
 
 ```python
-from src.configs.settings import Settings
+from libs.configs.selector import ConfigSelector
 
-settings = Settings()
+settings = ConfigSelector.create(provider="dynaconf")
 
 # Access nested config
-settings.triage.llm.model       # "gpt-4o-mini"
-settings.vectordb.host          # "localhost"
-```
-
-## Environment Variable Overrides
-
-Override any config value via environment variables using `__` separator:
-
-```bash
-TRIAGE__LLM__MODEL=gpt-4o
-VECTORDB__HOST=production.qdrant.io
+settings.triage.llm.model                    # "gpt-4o-mini"
+settings.agent_shared.vectordb.host          # "localhost"
+settings.ingestor.vectordb.host              # "localhost"
+settings.prompts.directory                   # "prompts"
 ```

@@ -8,8 +8,9 @@ Agent-specific configurations with LLM settings.
 
 ## Table of Contents
 
-| Agent | Description | Config File |
-|-------|-------------|-------------|
+| Config | Description | Config File |
+|--------|-------------|-------------|
+| [Shared](shared.md) | Shared services (vectordb, observability, prompt_manager) | `configs/agents/shared.yaml` |
 | [Triage](triage.md) | Support ticket triage agent | `configs/agents/triage.yaml` |
 
 ## Structure

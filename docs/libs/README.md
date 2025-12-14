@@ -7,6 +7,7 @@ Reusable utilities and external service integrations.
 | Category | Purpose | Documentation |
 |----------|---------|---------------|
 | Base | Base classes for provider pattern | [base/README.md](base/README.md) |
+| Configs | Configuration management | [configs/README.md](configs/README.md) |
 | LLM | LLM provider integrations | [llm/README.md](llm/README.md) |
 | Database | Database and vector store clients | [database/README.md](database/README.md) |
 | Logger | Logging utilities | [logger/README.md](logger/README.md) |

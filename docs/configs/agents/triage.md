@@ -1,6 +1,6 @@
 # Triage Agent Configuration
 
-Support ticket triage agent settings.
+Multi-agent triage system settings.
 
 ## Location
 
@@ -13,11 +13,41 @@ triage:
   llm:
     provider: "litellm"
     model: "gpt-4o-mini"
+    embedding_model: "text-embedding-3-large"
     temperature: 0.7
     max_tokens: 2000
 
   vectordb:
     collection_name: "knowledge_base"
+
+  agents:
+    translator:
+      prompt:
+        id: triage_translator
+        environment: production
+
+    supervisor:
+      prompt:
+        id: triage_supervisor
+        environment: production
+
+    billing:
+      prompt:
+        id: triage_billing
+        environment: production
+      category_filter: billing
+
+    technical:
+      prompt:
+        id: triage_technical
+        environment: production
+      category_filter: technical
+
+    general:
+      prompt:
+        id: triage_general
+        environment: production
+      category_filter: general
 ```
 
 ## Parameters
@@ -28,6 +58,7 @@ triage:
 |-----------|------|---------|-------------|
 | `provider` | string | `"litellm"` | LLM provider to use |
 | `model` | string | `"gpt-4o-mini"` | Model name for completions |
+| `embedding_model` | string | `"text-embedding-3-large"` | Model for embeddings |
 | `temperature` | float | `0.7` | Sampling temperature (0.0-1.0) |
 | `max_tokens` | int | `2000` | Maximum tokens in response |
 
@@ -35,29 +66,37 @@ triage:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `collection_name` | string | `"knowledge_base"` | Qdrant collection for this agent |
+| `collection_name` | string | `"knowledge_base"` | Qdrant collection name |
+
+### Agent Settings
+
+Each agent has:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `prompt.id` | string | Langfuse prompt name |
+| `prompt.environment` | string | Langfuse prompt label |
+| `category_filter` | string | KB category filter (specialists only) |
 
 ## Usage
 
 ```python
-from src.configs.settings import Settings
+from libs.configs.base import BaseConfigManager
 
-settings = Settings()
+settings = BaseConfigManager()
 
 # Access LLM config
 settings.triage.llm.provider    # "litellm"
 settings.triage.llm.model       # "gpt-4o-mini"
-settings.triage.llm.temperature # 0.7
-settings.triage.llm.max_tokens  # 2000
 
-# Access agent-specific collection
-settings.triage.vectordb.collection_name  # "knowledge_base"
+# Access agent configs
+settings.triage.agents.translator.prompt.id  # "triage_translator"
+settings.triage.agents.billing.category_filter  # "billing"
 ```
 
 ## Environment Overrides
 
 ```bash
 TRIAGE__LLM__MODEL=gpt-4o
-TRIAGE__LLM__TEMPERATURE=0.5
-TRIAGE__VECTORDB__COLLECTION_NAME=support_tickets
+TRIAGE__AGENTS__BILLING__CATEGORY_FILTER=payments
 ```
