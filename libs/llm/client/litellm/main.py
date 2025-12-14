@@ -1,14 +1,14 @@
-"""LiteLLM proxy client using HTTP requests.
+"""LiteLLM proxy client using OpenAI SDK.
 
 The LiteLLM proxy exposes OpenAI-compatible endpoints.
-We use httpx to make direct HTTP calls to the proxy.
+We use the OpenAI SDK pointing to the proxy URL.
 
 Reference: https://docs.litellm.ai/docs/proxy/quick_start
 """
 
 from typing import Optional
 
-import httpx
+from openai import OpenAI
 
 from libs.llm.client.base import BaseLLM
 from libs.logger.logger import get_logger
@@ -17,10 +17,10 @@ logger = get_logger(__name__)
 
 
 class LLMClient(BaseLLM):
-    """LiteLLM proxy client using HTTP requests.
+    """LiteLLM proxy client using OpenAI SDK.
 
     The proxy exposes OpenAI-compatible /chat/completions and /embeddings endpoints.
-    We use httpx to make direct HTTP calls.
+    We use the OpenAI SDK with base_url pointing to the proxy.
 
     The proxy provides:
     - Automatic caching via Redis
@@ -38,7 +38,6 @@ class LLMClient(BaseLLM):
         temperature: float = 0.7,
         max_tokens: int = 2000,
         api_key: str = "dummy",  # Proxy doesn't need real key if auth disabled
-        timeout: float = 120.0,
     ):
         """Initialize LiteLLM proxy client.
 
@@ -49,30 +48,25 @@ class LLMClient(BaseLLM):
             temperature: Sampling temperature (0-1)
             max_tokens: Maximum tokens in response
             api_key: API key for proxy (use "dummy" if auth disabled)
-            timeout: Request timeout in seconds
 
         Note:
             Model names must match those in proxy's config.yaml model_list
         """
-        self.proxy_url = proxy_url.rstrip("/")
         self.completion_model = completion_model
         self.embedding_model = embedding_model
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.api_key = api_key
-        self.timeout = timeout
+
+        # Create OpenAI client pointing to proxy
+        self.client = OpenAI(
+            base_url=proxy_url,
+            api_key=api_key,
+        )
 
         logger.info(
             f"LiteLLM proxy client initialized (proxy={proxy_url}, "
             f"completion={completion_model}, embedding={embedding_model})"
         )
-
-    def _get_headers(self) -> dict:
-        """Get HTTP headers for API requests."""
-        return {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
 
     def generate(
         self,
@@ -109,8 +103,6 @@ class LLMClient(BaseLLM):
         if not self.completion_model:
             raise ValueError("completion_model not set. Provide it in __init__")
 
-        url = f"{self.proxy_url}/chat/completions"
-
         try:
             # Mode 1: Dotprompt with template variables
             if prompt_variables is not None:
@@ -118,13 +110,13 @@ class LLMClient(BaseLLM):
                     f"Using dotprompt mode with variables: {list(prompt_variables.keys())}"
                 )
 
-                payload = {
-                    "model": self.completion_model,
-                    "messages": [{"role": "user", "content": "ignored"}],
-                    "prompt_variables": prompt_variables,
-                    "temperature": kwargs.get("temperature", self.temperature),
-                    "max_tokens": kwargs.get("max_tokens", self.max_tokens),
-                }
+                response = self.client.chat.completions.create(
+                    model=self.completion_model,
+                    messages=[{"role": "user", "content": "ignored"}],
+                    extra_body={"prompt_variables": prompt_variables},
+                    temperature=kwargs.get("temperature", self.temperature),
+                    max_tokens=kwargs.get("max_tokens", self.max_tokens),
+                )
 
             # Mode 2: Traditional chat completion
             else:
@@ -140,30 +132,18 @@ class LLMClient(BaseLLM):
                     messages.append({"role": "system", "content": system_prompt})
                 messages.append({"role": "user", "content": prompt})
 
-                payload = {
-                    "model": self.completion_model,
-                    "messages": messages,
-                    "temperature": kwargs.get("temperature", self.temperature),
-                    "max_tokens": kwargs.get("max_tokens", self.max_tokens),
-                }
-
-            with httpx.Client(timeout=self.timeout) as client:
-                response = client.post(
-                    url,
-                    headers=self._get_headers(),
-                    json=payload,
+                response = self.client.chat.completions.create(
+                    model=self.completion_model,
+                    messages=messages,
+                    temperature=kwargs.get("temperature", self.temperature),
+                    max_tokens=kwargs.get("max_tokens", self.max_tokens),
                 )
-                response.raise_for_status()
-                data = response.json()
 
-            content = data["choices"][0]["message"]["content"]
+            content = response.choices[0].message.content
 
             logger.info(f"Generated (length={len(content)})")
             return content
 
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
-            raise
         except Exception as e:
             logger.error(f"Generation failed: {e}", exc_info=True)
             raise
@@ -184,31 +164,18 @@ class LLMClient(BaseLLM):
         if not self.embedding_model:
             raise ValueError("embedding_model not set. Provide it in __init__")
 
-        url = f"{self.proxy_url}/embeddings"
-
         try:
-            payload = {
-                "model": self.embedding_model,
-                "input": texts,
-            }
+            response = self.client.embeddings.create(
+                model=self.embedding_model,
+                input=texts,
+                **kwargs,
+            )
 
-            with httpx.Client(timeout=self.timeout) as client:
-                response = client.post(
-                    url,
-                    headers=self._get_headers(),
-                    json=payload,
-                )
-                response.raise_for_status()
-                data = response.json()
-
-            embeddings = [item["embedding"] for item in data["data"]]
+            embeddings = [item.embedding for item in response.data]
 
             logger.info(f"Generated {len(embeddings)} embeddings")
             return embeddings
 
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
-            raise
         except Exception as e:
             logger.error(f"Embedding failed: {e}", exc_info=True)
             raise
