@@ -14,6 +14,7 @@ langgraph-checkpoint-redis==0.1.2
 
 # LLM Providers
 litellm==1.78.7
+openai>=1.0.0
 
 # Observability & Prompt Management
 langfuse==3.8.1
@@ -25,6 +26,7 @@ fastembed==0.6.1
 # Utilities
 python-dotenv==1.1.1
 redis==6.4.0
+python-frontmatter>=1.0.0
 
 # Development
 pytest==8.4.2
