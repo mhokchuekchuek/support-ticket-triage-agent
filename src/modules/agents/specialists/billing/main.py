@@ -1,6 +1,6 @@
 """Billing specialist agent for payment and subscription issues."""
 
-from src.modules.agents.specialist_base import SpecialistBaseAgent
+from src.modules.agents.specialists.base import SpecialistBaseAgent
 
 
 class BillingAgent(SpecialistBaseAgent):

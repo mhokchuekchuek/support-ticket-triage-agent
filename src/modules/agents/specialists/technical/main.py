@@ -1,6 +1,6 @@
 """Technical specialist agent for system and access issues."""
 
-from src.modules.agents.specialist_base import SpecialistBaseAgent
+from src.modules.agents.specialists.base import SpecialistBaseAgent
 
 
 class TechnicalAgent(SpecialistBaseAgent):
