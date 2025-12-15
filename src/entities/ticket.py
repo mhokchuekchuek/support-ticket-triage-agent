@@ -56,9 +56,9 @@ class Ticket(BaseModel):
         metadata: Additional metadata if needed.
     """
 
-    ticket_id: str = Field(..., description="Unique ticket identifier")
+    ticket_id: Optional[str] = Field(None, description="Unique ticket identifier (auto-generated if not provided)")
     customer_id: str = Field(..., description="Customer identifier")
-    customer_info: CustomerInfo = Field(..., description="Customer context")
+    customer_info: Optional[CustomerInfo] = Field(None, description="Customer context (optional)")
     messages: list[TicketMessage] = Field(
         ..., description="Conversation messages in chronological order"
     )
