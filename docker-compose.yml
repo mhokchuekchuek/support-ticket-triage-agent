@@ -13,7 +13,7 @@ services:
       - support-triage-network
 
   # ==============================================================================
-  # PostgreSQL - Database for LiteLLM proxy
+  # PostgreSQL - Database for LiteLLM proxy and Support Triage
   # ==============================================================================
   postgres:
     image: postgres:15-alpine
@@ -24,8 +24,10 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=litellm
+      - POSTGRES_MULTIPLE_DATABASES=litellm,support_triage
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
     networks:
       - support-triage-network
 
@@ -58,7 +60,8 @@ services:
       - ./prompts:/app/prompts:ro
     env_file:
       - .env
-    command: ["--config", "/app/config.yaml", "--port", "4000", "--detailed_debug"]
+    command:
+      ["--config", "/app/config.yaml", "--port", "4000", "--detailed_debug"]
     depends_on:
       - redis
       - postgres
@@ -89,10 +92,16 @@ services:
       - QDRANT_PORT=6333
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=support_triage
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     depends_on:
       - litellm-proxy
       - qdrant
       - redis
+      - postgres
     networks:
       - support-triage-network
     restart: unless-stopped
