@@ -4,7 +4,7 @@ Base class for specialist agents (billing, technical, general).
 
 ## Location
 
-`src/modules/agents/specialist_base.py`
+`src/modules/agents/specialists/base.py`
 
 ## Class
 

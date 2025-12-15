@@ -7,15 +7,22 @@ Project architecture documentation.
 | Document | Description |
 |----------|-------------|
 | [code.md](code.md) | Architecture overview, layers, diagrams, patterns |
+| [agent-flow.md](agent-flow.md) | Detailed step-by-step agent execution flow |
 
 ## Quick Overview
 
-Clean Architecture with 3 layers:
+Clean Architecture with 5 layers:
 
 ```
-Entities (Inner) → Modules (Middle) → Use Cases (Outer)
+API (src/api/) → Use Cases (src/usecases/) → Domain (src/entities/, src/modules/)
+                                                    ↓
+                                            Repositories (src/repositories/)
+                                                    ↓
+                                            Infrastructure (libs/)
 ```
 
 ## See Also
 
 - [Libs](../libs/README.md)
+- [Use Cases](../src/usecases/README.md)
+- [Repositories](../src/repositories/README.md)

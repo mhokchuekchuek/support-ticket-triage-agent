@@ -50,17 +50,17 @@ from src.modules.agents.base import BaseAgent
 from typing import Any
 
 
-class TriageAgent(BaseAgent):
-    """Agent that performs ticket triage."""
+class BillingAgent(BaseAgent):
+    """Agent that handles billing-related tickets."""
 
     def __init__(self, llm_client):
-        super().__init__(name="triage")
+        super().__init__(name="billing")
         self.llm_client = llm_client
 
     def execute(self, state: dict[str, Any]) -> dict[str, Any]:
         self.logger.info(f"Processing ticket: {state.get('ticket_id')}")
 
-        # Perform triage logic
+        # Perform billing analysis
         result = self._analyze_ticket(state)
 
         # Update state

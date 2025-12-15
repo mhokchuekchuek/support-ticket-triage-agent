@@ -4,7 +4,7 @@ Search the knowledge base for relevant articles with optional category filtering
 
 ## Location
 
-`src/modules/agents/tools/kb_retrieval.py`
+`src/modules/agents/specialists/tools/kb_retrieval.py`
 
 ## Classes
 
@@ -85,7 +85,7 @@ category: billing
 ## Usage
 
 ```python
-from src.modules.agents.tools.kb_retrieval import KBRetrievalTool
+from src.modules.agents.specialists.tools.kb_retrieval import KBRetrievalTool
 
 # Without category filter (searches all)
 tool = KBRetrievalTool(
@@ -106,6 +106,6 @@ result = billing_tool._run(query="payment failed", top_k=3)
 
 ## See Also
 
-- [BillingAgent](../billing.md)
-- [TechnicalAgent](../technical.md)
-- [GeneralAgent](../general.md)
+- [BillingAgent](../billing/README.md)
+- [TechnicalAgent](../technical/README.md)
+- [GeneralAgent](../general/README.md)

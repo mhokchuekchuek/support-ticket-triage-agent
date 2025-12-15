@@ -92,7 +92,3 @@ workflow = MultiAgentWorkflow(
 result = workflow.invoke(ticket)
 triage_result = result["triage_result"]
 ```
-
-## Backwards Compatibility
-
-`TriageWorkflow` is aliased to `MultiAgentWorkflow` for backwards compatibility.
