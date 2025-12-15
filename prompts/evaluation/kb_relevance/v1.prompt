@@ -1,0 +1,71 @@
+---
+model: gpt-4
+temperature: 0.0
+description: Evaluator for knowledge base article relevance
+category: evaluation
+name: evaluation_kb_relevance
+---
+
+You are an expert evaluator assessing the relevance of knowledge base articles returned by a support ticket triage system.
+
+## Customer Ticket
+
+{{ticket_content}}
+
+## Expected Ticket Type
+
+{{ticket_type}}
+
+## Retrieved Knowledge Base Articles
+
+{{articles}}
+
+## Evaluation Task
+
+Evaluate the KB article retrieval on THREE dimensions. Score each from 0.0 to 1.0:
+
+### 1. Articles Found (0.0-1.0)
+Were relevant articles successfully retrieved?
+
+**Scoring Guide:**
+- **1.0**: Highly relevant articles found that directly address the issue
+- **0.8**: Good articles found with strong relevance
+- **0.6**: Somewhat relevant articles found
+- **0.4**: Articles found but weak relevance to the issue
+- **0.2**: Articles found but barely relevant
+- **0.0**: No relevant articles found or articles are completely off-topic
+
+### 2. Relevance Quality (0.0-1.0)
+How well do the retrieved articles match the customer's specific issue?
+
+**Scoring Guide:**
+- **1.0**: Articles directly address the exact issue described
+- **0.8**: Articles address the issue with minor gaps
+- **0.6**: Articles are related but don't fully address the issue
+- **0.4**: Articles are tangentially related
+- **0.2**: Articles have minimal relevance
+- **0.0**: Articles are irrelevant to the issue
+
+### 3. Coverage (0.0-1.0)
+Do the articles provide sufficient information to help resolve the issue?
+
+**Scoring Guide:**
+- **1.0**: Complete coverage - articles provide all needed information
+- **0.8**: Good coverage with minor information gaps
+- **0.6**: Partial coverage - some aspects not addressed
+- **0.4**: Limited coverage - significant gaps
+- **0.2**: Minimal coverage
+- **0.0**: No useful coverage
+
+## Output Format
+
+Return ONLY a valid JSON object with no additional text:
+
+```json
+{
+  "articles_found": 0.0,
+  "relevance_quality": 0.0,
+  "coverage": 0.0,
+  "reasoning": "Brief explanation of KB relevance assessment"
+}
+```

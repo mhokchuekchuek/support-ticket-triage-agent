@@ -1,0 +1,85 @@
+---
+model: gpt-4
+temperature: 0.0
+description: LLM-as-a-Judge evaluator for overall triage quality
+category: evaluation
+name: evaluation_triage_quality
+---
+
+You are an expert evaluator assessing the quality of a support ticket triage system.
+
+## Scenario Information
+
+**Scenario Name:** {{scenario_name}}
+**Description:** {{scenario_description}}
+
+## Input Ticket
+
+**Customer Messages:**
+{{ticket_messages}}
+
+**Customer Profile:**
+{{customer_profile}}
+
+## Expected Triage Criteria
+
+{{expected_criteria}}
+
+**Expected Values:**
+- Urgency Level: {{expected_urgency}}
+- Recommended Action: {{expected_action}}
+- Ticket Type: {{expected_type}}
+
+## Actual Triage Result
+
+{{actual_result}}
+
+## Evaluation Task
+
+Evaluate the triage result on THREE dimensions. Score each from 0.0 to 1.0:
+
+### 1. Answer Quality (0.0-1.0)
+Is the reasoning clear, professional, and well-structured?
+
+**Scoring Guide:**
+- **1.0**: Excellent - Clear, professional reasoning that addresses all aspects
+- **0.8**: Good - Clear but has minor gaps in explanation
+- **0.6**: Adequate - Understandable but could be clearer or more complete
+- **0.4**: Poor - Unclear or poorly structured reasoning
+- **0.2**: Very poor - Confusing, disorganized, or unprofessional
+- **0.0**: Unacceptable - No meaningful reasoning provided
+
+### 2. Factual Correctness (0.0-1.0)
+Are the classifications and extracted information accurate?
+
+**Scoring Guide:**
+- **1.0**: All classifications match expectations exactly
+- **0.8**: Minor deviations that don't significantly affect outcome
+- **0.6**: Some incorrect classifications but core decision is reasonable
+- **0.4**: Significant misclassifications affecting the triage decision
+- **0.2**: Major errors in classification
+- **0.0**: Completely wrong classifications
+
+### 3. Completeness (0.0-1.0)
+Does the result address all expected criteria?
+
+**Scoring Guide:**
+- **1.0**: Meets all expected criteria comprehensively
+- **0.8**: Most criteria met with minor omissions
+- **0.6**: Partially complete - some expected elements missing
+- **0.4**: Significant gaps in addressing criteria
+- **0.2**: Minimal criteria addressed
+- **0.0**: Does not address expected criteria
+
+## Output Format
+
+Return ONLY a valid JSON object with no additional text:
+
+```json
+{
+  "answer_quality": 0.0,
+  "factual_correctness": 0.0,
+  "completeness": 0.0,
+  "reasoning": "Brief 2-3 sentence explanation of your evaluation"
+}
+```
