@@ -1,18 +1,25 @@
-"""Multi-agent triage workflow dependency initialization."""
+"""Triage service dependency initialization."""
 
 import os
 
-import redis
 from langgraph.checkpoint.redis import RedisSaver
 
-from src.modules.agents.translator import TranslatorAgent
-from src.modules.agents.supervisor import SupervisorAgent
-from src.modules.agents.billing import BillingAgent
-from src.modules.agents.technical import TechnicalAgent
-from src.modules.agents.general import GeneralAgent
-from src.modules.agents.tools.kb_retrieval import KBRetrievalTool
-from src.modules.agents.tools.customer_lookup import CustomerLookupTool
+from src.modules.agents.translator.main import TranslatorAgent
+from src.modules.agents.supervisor.main import SupervisorAgent
+from src.modules.agents.specialists.billing.main import BillingAgent
+from src.modules.agents.specialists.technical.main import TechnicalAgent
+from src.modules.agents.specialists.general.main import GeneralAgent
+from src.modules.agents.ticket_matcher.main import TicketMatcherAgent
+from src.modules.agents.specialists.tools.kb_retrieval import KBRetrievalTool
+from src.modules.agents.supervisor.tools.customer_lookup import CustomerLookupTool
+from src.modules.agents.ticket_matcher.tools.ticket_summarize import TicketSummarizeTool
 from src.modules.graph.workflow import MultiAgentWorkflow
+from src.repositories.checkpoint.main import CheckpointRepository
+from src.repositories.ticket.main import TicketRepository
+from src.repositories.chat.main import ChatRepository
+from src.usecases.triage.main import TriageService
+from libs.database.tabular.sql.selector import SQLClientSelector
+from libs.database.keyvalue_db.selector import KeyValueClientSelector
 from libs.llm.client.selector import LLMClientSelector
 from libs.llm.observability.selector import ObservabilitySelector
 from libs.llm.prompt_manager.selector import PromptManagerSelector
@@ -23,21 +30,21 @@ from libs.logger.logger import get_logger
 logger = get_logger(__name__)
 
 
-def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflow:
-    """Initialize and return the multi-agent triage workflow with all dependencies.
+def initialize_services(
+    settings: BaseConfigManager,
+) -> tuple[TriageService, RedisSaver]:
+    """Initialize and return the triage service.
 
     Creates:
-    - TranslatorAgent: Language detection and translation
-    - SupervisorAgent: Classification and routing with customer_lookup tool
-    - BillingAgent: Billing specialist with kb_search (billing category)
-    - TechnicalAgent: Technical specialist with kb_search (technical category)
-    - GeneralAgent: General specialist with kb_search (general category)
+    - Repositories: CheckpointRepository, TicketRepository, ChatRepository
+    - Workflow: MultiAgentWorkflow (translator → supervisor → specialists)
+    - Services: TriageService
 
     Args:
         settings: Application configuration manager.
 
     Returns:
-        Configured MultiAgentWorkflow instance.
+        Tuple of (TriageService, RedisSaver checkpointer).
     """
 
     logger.info("Initializing LLM clients...")
@@ -67,6 +74,7 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
         host=settings.agent_shared.vectordb.host,
         port=int(settings.agent_shared.vectordb.port),
         collection_name=settings.triage.vectordb.collection_name,
+        vector_size=int(settings.agent_shared.vectordb.vector_size),
     )
 
     logger.info("Initializing observability (Langfuse)...")
@@ -75,17 +83,48 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
     logger.info("Initializing prompt manager (Langfuse)...")
     prompt_manager = PromptManagerSelector.create(provider="langfuse")
 
-    logger.info("Initializing Redis checkpointer...")
+    logger.info("Initializing Redis client...")
     redis_host = os.getenv("REDIS_HOST", "redis")
     redis_port = int(os.getenv("REDIS_PORT", "6379"))
-    redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
-    checkpointer = RedisSaver(redis_client=redis_client)
+    kv_client = KeyValueClientSelector.create(
+        provider="redis",
+        host=redis_host,
+        port=redis_port,
+        decode_responses=True,
+    )
+    # LangGraph RedisSaver needs raw redis.Redis client
+    checkpointer = RedisSaver(redis_client=kv_client.get_raw_client())
     checkpointer.setup()
 
-    # Get agent configs
+    logger.info("Initializing PostgreSQL client...")
+    postgres_host = os.getenv("POSTGRES_HOST", "postgres")
+    postgres_port = os.getenv("POSTGRES_PORT", "5432")
+    postgres_db = os.getenv("POSTGRES_DB", "support_triage")
+    postgres_user = os.getenv("POSTGRES_USER", "postgres")
+    postgres_password = os.getenv("POSTGRES_PASSWORD", "postgres")
+
+    sql_client = SQLClientSelector.create(
+        provider="postgres",
+        host=postgres_host,
+        port=int(postgres_port),
+        database=postgres_db,
+        user=postgres_user,
+        password=postgres_password,
+    )
+
+    # === Create Repositories ===
+    logger.info("Creating repositories...")
+    checkpoint_repo = CheckpointRepository(
+        checkpointer=checkpointer,
+        kv_client=kv_client,
+    )
+    ticket_repo = TicketRepository(db_client=sql_client)
+    chat_repo = ChatRepository(db_client=sql_client)
+
+    # === Create Agents ===
     agent_configs = settings.triage.agents
 
-    # Initialize TranslatorAgent (no tools)
+    # TranslatorAgent (no tools)
     logger.info("Creating TranslatorAgent...")
     translator_agent = TranslatorAgent(
         llm=llm,
@@ -94,9 +133,9 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
         agent_config=agent_configs.translator,
     )
 
-    # Initialize SupervisorAgent with customer_lookup tool
+    # SupervisorAgent with customer_lookup tool
     logger.info("Creating SupervisorAgent...")
-    customer_tool = CustomerLookupTool(data_path="data/customers.json")
+    customer_tool = CustomerLookupTool(db_client=sql_client)
     supervisor_agent = SupervisorAgent(
         llm=llm,
         tools=[customer_tool],
@@ -105,7 +144,7 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
         agent_config=agent_configs.supervisor,
     )
 
-    # Initialize BillingAgent with kb_search (billing category)
+    # BillingAgent with kb_search (billing category)
     logger.info("Creating BillingAgent...")
     billing_kb_tool = KBRetrievalTool(
         vector_store=vector_store,
@@ -120,7 +159,7 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
         agent_config=agent_configs.billing,
     )
 
-    # Initialize TechnicalAgent with kb_search (technical category)
+    # TechnicalAgent with kb_search (technical category)
     logger.info("Creating TechnicalAgent...")
     technical_kb_tool = KBRetrievalTool(
         vector_store=vector_store,
@@ -135,7 +174,7 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
         agent_config=agent_configs.technical,
     )
 
-    # Initialize GeneralAgent with kb_search (general category)
+    # GeneralAgent with kb_search (general category)
     logger.info("Creating GeneralAgent...")
     general_kb_tool = KBRetrievalTool(
         vector_store=vector_store,
@@ -150,7 +189,20 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
         agent_config=agent_configs.general,
     )
 
-    # Create multi-agent workflow
+    # TicketMatcherAgent (used by TriageService for pre-workflow matching)
+    logger.info("Creating TicketMatcherAgent...")
+    ticket_matcher_agent = TicketMatcherAgent(
+        llm=llm,
+        observability=observability,
+        prompt_manager=prompt_manager,
+        agent_config=agent_configs.get("ticket_matcher", {}),
+    )
+
+    # TicketSummarizeTool (used by TriageService for summarizing activated tickets)
+    logger.info("Creating TicketSummarizeTool...")
+    ticket_summarize_tool = TicketSummarizeTool(kv_client=kv_client)
+
+    # === Create Workflow ===
     logger.info("Creating MultiAgentWorkflow...")
     workflow = MultiAgentWorkflow(
         translator_agent=translator_agent,
@@ -162,5 +214,16 @@ def initialize_triage_workflow(settings: BaseConfigManager) -> MultiAgentWorkflo
         checkpointer=checkpointer,
     )
 
-    logger.info("Multi-agent triage workflow initialization complete")
-    return workflow
+    # === Create Services ===
+    logger.info("Creating TriageService...")
+    triage_service = TriageService(
+        workflow=workflow,
+        checkpoint_repo=checkpoint_repo,
+        ticket_repo=ticket_repo,
+        chat_repo=chat_repo,
+        ticket_matcher_agent=ticket_matcher_agent,
+        ticket_summarize_tool=ticket_summarize_tool,
+    )
+
+    logger.info("Service initialization complete")
+    return triage_service, checkpointer

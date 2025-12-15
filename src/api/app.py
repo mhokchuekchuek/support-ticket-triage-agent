@@ -5,8 +5,8 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.usecases.api.routes import health, triage
-from src.usecases.api.dependencies.triage import initialize_triage_workflow
+from src.api.routes import health, triage
+from src.api.dependencies.triage import initialize_services
 from libs.configs.base import BaseConfigManager
 from libs.logger.logger import get_logger
 
@@ -27,8 +27,10 @@ def create_app(settings: BaseConfigManager) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         """Application lifespan manager."""
         logger.info("Starting up application...")
-        app.state.triage_workflow = initialize_triage_workflow(settings)
-        logger.info("Triage workflow initialized")
+        triage_service, checkpointer = initialize_services(settings)
+        app.state.triage_service = triage_service
+        app.state.checkpointer = checkpointer
+        logger.info("Services initialized")
         yield
         logger.info("Shutting down application...")
 

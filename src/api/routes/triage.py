@@ -1,4 +1,5 @@
 """Triage route for processing support tickets."""
+
 from fastapi import APIRouter, Request, HTTPException
 
 from src.entities.ticket import Ticket
@@ -14,6 +15,11 @@ router = APIRouter(tags=["triage"])
 async def triage_ticket(ticket: Ticket, request: Request) -> TriageResult:
     """Triage a support ticket.
 
+    Uses TriageService to:
+    1. Match to activated tickets (pre-workflow)
+    2. Run agent workflow (translator → supervisor → specialist)
+    3. Persist completed tickets (post-workflow)
+
     Args:
         ticket: Support ticket to triage.
         request: FastAPI request object.
@@ -27,8 +33,8 @@ async def triage_ticket(ticket: Ticket, request: Request) -> TriageResult:
     try:
         logger.info(f"Received triage request for ticket: {ticket.ticket_id}")
 
-        workflow = request.app.state.triage_workflow
-        result = workflow.invoke(ticket)
+        triage_service = request.app.state.triage_service
+        result = triage_service.triage_ticket(ticket)
 
         if result.get("triage_result") is None:
             raise HTTPException(
