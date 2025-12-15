@@ -51,9 +51,9 @@ class KBProcessor:
         # Initialize LLM client for embeddings
         self.llm_client = LLMClientSelector.create(
             provider="litellm",
-            proxy_url=self.settings.get("LITELLM_PROXY_URL", "http://localhost:4000"),
+            proxy_url=self.settings.ingestor.litellm.proxy_url,
             embedding_model=self.settings.ingestor.embedding.model,
-            api_key=self.settings.get("LITELLM_MASTER_KEY", "sk-1234"),
+            api_key=self.settings.ingestor.litellm.api_key,
         )
 
         # Initialize text chunker

@@ -80,22 +80,43 @@ class VectorStoreClient(BaseVectorStore):
         )
 
     def _ensure_collection(self) -> None:
-        """Create collection if it doesn't exist."""
+        """Create collection if it doesn't exist, or recreate if dimensions mismatch."""
         try:
             # Check if collection exists
             collections = self.client.get_collections().collections
             collection_names = [c.name for c in collections]
 
-            if self.collection_name not in collection_names:
-                # Map distance string to Distance enum
-                distance_map = {
-                    "Cosine": Distance.COSINE,
-                    "Euclid": Distance.EUCLID,
-                    "Dot": Distance.DOT,
-                }
-                distance_metric = distance_map.get(self.distance, Distance.COSINE)
+            # Map distance string to Distance enum
+            distance_map = {
+                "Cosine": Distance.COSINE,
+                "Euclid": Distance.EUCLID,
+                "Dot": Distance.DOT,
+            }
+            distance_metric = distance_map.get(self.distance, Distance.COSINE)
 
-                # Create collection
+            if self.collection_name in collection_names:
+                # Check if vector size matches
+                collection_info = self.client.get_collection(self.collection_name)
+                existing_size = collection_info.config.params.vectors.size
+
+                if existing_size != self.vector_size:
+                    logger.warning(
+                        f"Collection '{self.collection_name}' has wrong vector size "
+                        f"(existing={existing_size}, expected={self.vector_size}). Recreating..."
+                    )
+                    self.client.delete_collection(collection_name=self.collection_name)
+                    self.client.create_collection(
+                        collection_name=self.collection_name,
+                        vectors_config=VectorParams(
+                            size=self.vector_size,
+                            distance=distance_metric,
+                        ),
+                    )
+                    logger.info(f"Recreated collection '{self.collection_name}'")
+                else:
+                    logger.info(f"Collection '{self.collection_name}' already exists")
+            else:
+                # Create new collection
                 self.client.create_collection(
                     collection_name=self.collection_name,
                     vectors_config=VectorParams(
@@ -104,8 +125,6 @@ class VectorStoreClient(BaseVectorStore):
                     ),
                 )
                 logger.info(f"Created collection '{self.collection_name}'")
-            else:
-                logger.info(f"Collection '{self.collection_name}' already exists")
 
         except Exception as e:
             logger.error(f"Failed to ensure collection: {e}", exc_info=True)

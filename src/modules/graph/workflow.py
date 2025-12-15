@@ -5,10 +5,15 @@ from typing import Optional
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
-from src.modules.graph.state import AgentState, TicketType, create_initial_state
+from src.modules.graph.state import AgentState, create_initial_state
 from src.modules.agents.base import BaseAgent
 from src.entities.ticket import Ticket
-from src.entities.triage_result import TriageResult, UrgencyLevel, RecommendedAction, ExtractedInfo
+from src.entities.triage_result import (
+    TriageResult,
+    UrgencyLevel,
+    RecommendedAction,
+    ExtractedInfo,
+)
 from libs.llm.observability.base import BaseObservability
 from libs.logger.logger import get_logger
 
@@ -18,10 +23,11 @@ logger = get_logger(__name__)
 class MultiAgentWorkflow:
     """LangGraph workflow for multi-agent ticket triage.
 
-    Orchestrates the triage process using a supervisor pattern:
-    1. TranslatorAgent: Detects language and translates non-English
-    2. SupervisorAgent: Classifies urgency/type and routes to specialist
-    3. Specialist Agents: BillingAgent, TechnicalAgent, GeneralAgent
+    Simplified workflow - agent execution only.
+    Pre/post workflow logic (ticket matching, persistence) handled by TriageService.
+
+    Flow:
+    START → translator → supervisor → [billing|technical|general|escalate] → END
 
     Attributes:
         translator_agent: Agent for language detection and translation.
@@ -30,7 +36,7 @@ class MultiAgentWorkflow:
         technical_agent: Specialist for technical issues.
         general_agent: Specialist for general inquiries.
         observability: Observability client for tracing.
-        checkpointer: Redis checkpointer for state persistence.
+        checkpointer: Checkpointer for state persistence.
         graph: Compiled LangGraph state graph.
     """
 
@@ -67,8 +73,7 @@ class MultiAgentWorkflow:
     def _build_graph(self) -> StateGraph:
         """Build the LangGraph state graph.
 
-        Flow:
-        START -> translator -> supervisor -> [billing|technical|general|escalate] -> END
+        Flow: START → translator → supervisor → [billing|technical|general|escalate] → END
 
         Returns:
             Compiled StateGraph for the workflow.
@@ -86,7 +91,7 @@ class MultiAgentWorkflow:
         # Set entry point
         graph.set_entry_point("translator")
 
-        # Translator -> Supervisor
+        # Translator → Supervisor
         graph.add_edge("translator", "supervisor")
 
         # Supervisor routes to specialists
@@ -101,7 +106,7 @@ class MultiAgentWorkflow:
             },
         )
 
-        # All specialists -> END
+        # All specialists go to END
         graph.add_edge("billing", END)
         graph.add_edge("technical", END)
         graph.add_edge("general", END)
@@ -173,39 +178,40 @@ class MultiAgentWorkflow:
     ) -> AgentState:
         """Run the multi-agent triage workflow on a ticket.
 
+        Pre/post workflow logic handled by TriageService.
+        This method only runs the agent graph.
+
         Args:
             ticket: Support ticket to triage.
-            config: Optional LangGraph config.
+            config: LangGraph config (should include thread_id from TriageService).
 
         Returns:
             Final AgentState with triage result.
         """
-        logger.info(f"Starting multi-agent triage for ticket: {ticket.ticket_id}")
+        customer_id = ticket.customer_id
+
+        logger.info(f"Starting agent workflow for ticket: {ticket.ticket_id}")
 
         run_config = config or {}
 
-        # Configure thread ID for checkpointing
-        if self.checkpointer:
-            run_config["configurable"] = run_config.get("configurable", {})
-            run_config["configurable"]["thread_id"] = ticket.ticket_id
-
         # Add observability callbacks
-        # Use customer_id as session_id to group all customer interactions
         if self.observability:
             callback_handler = self.observability.get_callback_handler(
-                session_id=ticket.customer_id,
-                user_id=ticket.customer_id,
+                session_id=customer_id,
+                user_id=customer_id,
                 metadata={
                     "ticket_id": ticket.ticket_id,
-                    "plan": ticket.customer_info.plan,
-                    "region": ticket.customer_info.region,
+                    "plan": ticket.customer_info.plan if ticket.customer_info else None,
+                    "region": ticket.customer_info.region if ticket.customer_info else None,
                 },
             )
             if callback_handler:
-                run_config["callbacks"] = run_config.get("callbacks", []) + [callback_handler]
+                run_config["callbacks"] = run_config.get("callbacks", []) + [
+                    callback_handler
+                ]
                 run_config["metadata"] = {
-                    "langfuse_session_id": ticket.customer_id,
-                    "langfuse_user_id": ticket.customer_id,
+                    "langfuse_session_id": customer_id,
+                    "langfuse_user_id": customer_id,
                 }
 
         # Create initial state and run workflow
@@ -216,12 +222,5 @@ class MultiAgentWorkflow:
         if self.observability:
             self.observability.flush()
 
-        logger.info(f"Multi-agent triage complete for ticket: {ticket.ticket_id}")
+        logger.info(f"Agent workflow complete for ticket: {ticket.ticket_id}")
         return result
-
-
-# Keep old class for backwards compatibility
-class TriageWorkflow(MultiAgentWorkflow):
-    """Alias for MultiAgentWorkflow for backwards compatibility."""
-
-    pass

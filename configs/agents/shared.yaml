@@ -18,6 +18,7 @@ agent_shared:
     provider: qdrant
     host: "@format {env[QDRANT_HOST]}"
     port: "@format {env[QDRANT_PORT]}"
+    vector_size: 3072  # text-embedding-3-large dimension
 
   # ============================================================================
   # Observability - Langfuse Tracing

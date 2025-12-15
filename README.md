@@ -67,23 +67,17 @@ curl http://localhost:8000/health
 
 ### Triage Endpoint
 
+Analyze a support ticket and get triage recommendations.
+
 ```bash
 curl -X POST http://localhost:8000/api/triage \
   -H "Content-Type: application/json" \
   -d '{
-    "ticket_id": "test_001",
     "customer_id": "customer_001",
-    "customer_info": {
-      "plan": "free",
-      "tenure_months": 3,
-      "region": "US",
-      "previous_tickets": 1
-    },
     "messages": [
       {
         "role": "customer",
-        "content": "I was charged twice for my subscription!",
-        "timestamp": "2024-11-15T10:30:00Z"
+        "content": "I was charged twice for my subscription!"
       }
     ]
   }'
@@ -109,7 +103,11 @@ curl -X POST http://localhost:8000/api/triage \
 
 ## Architecture
 
-Multi-agent supervisor pattern with Clean Architecture: `Entities -> Modules -> Use Cases`
+Multi-agent supervisor pattern with Clean Architecture:
+
+```
+API → Use Cases (Services) → Domain (Entities, Agents, Workflow) → Repositories → Infrastructure
+```
 
 ```mermaid
 flowchart LR
@@ -128,16 +126,19 @@ src/
 ├── entities/           # Domain models (Ticket, TriageResult)
 ├── modules/
 │   ├── agents/         # Multi-agent system
-│   │   ├── translator.py    # Language detection/translation
-│   │   ├── supervisor.py    # Classification and routing
-│   │   ├── billing.py       # Billing specialist
-│   │   ├── technical.py     # Technical specialist
-│   │   └── general.py       # General specialist
+│   │   ├── translator/      # Language detection/translation
+│   │   ├── supervisor/      # Classification and routing
+│   │   └── specialists/     # Billing, Technical, General agents
 │   └── graph/          # LangGraph workflow
-└── usecases/
-    └── api/            # FastAPI application
-        ├── routes/     # API endpoints
-        └── dependencies/  # Dependency injection
+├── usecases/           # Application business logic
+│   └── triage/         # TriageService
+├── repositories/       # Data access layer
+│   ├── checkpoint/     # Redis checkpoint operations
+│   ├── ticket/         # Ticket persistence
+│   └── chat/           # Chat message persistence
+└── api/                # FastAPI application
+    ├── routes/         # API endpoints
+    └── dependencies/   # Service initialization
 ```
 
 See [Architecture Documentation](docs/architecture/README.md) for details.
@@ -149,9 +150,12 @@ See [Architecture Documentation](docs/architecture/README.md) for details.
 | `configs/` | Configuration files | [docs/configs](docs/configs/README.md) |
 | `libs/` | Shared libraries | [docs/libs](docs/libs/README.md) |
 | `ingestor/` | KB ingestion pipeline | [docs/ingestor](docs/ingestor/README.md) |
-| `src/entities/` | Domain models | - |
-| `src/modules/` | Agents, graph | - |
-| `src/usecases/` | API layer | - |
+| `evaluation/` | LLM-as-Judge evaluation | [docs/evaluation](docs/evaluation/README.md) |
+| `src/entities/` | Domain models | [docs/src/entities](docs/src/entities/README.md) |
+| `src/modules/` | Agents, graph | [docs/src/modules](docs/src/modules/README.md) |
+| `src/usecases/` | Services | [docs/src/usecases](docs/src/usecases/README.md) |
+| `src/repositories/` | Data access | [docs/src/repositories](docs/src/repositories/README.md) |
+| `src/api/` | FastAPI routes | [docs/api](docs/api/README.md) |
 
 ## Documentation
 
@@ -160,5 +164,5 @@ See [Architecture Documentation](docs/architecture/README.md) for details.
 - [Configs](docs/configs/README.md)
 - [Libs](docs/libs/README.md)
 - [Ingestor](docs/ingestor/README.md)
+- [Evaluation](docs/evaluation/README.md)
 - [Decisions](docs/decision/README.md)
-- [Design](docs/design.md)
